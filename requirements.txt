@@ -1,0 +1,15 @@
+langchain==1.2.12
+langchain-community==0.4.1
+langchain-core==1.2.20
+langchain-groq==1.1.2
+langchain-ollama==1.0.1
+pymupdf-layout==1.27.2
+faiss-cpu==1.13.2
+langchain-huggingface==1.2.1
+python-dotenv==1.2.2
+sentence-transformers==5.3.0
+fastapi==0.135.2
+uvicorn==0.42.0
+portalocker==3.2.0
+isort==8.0.1
+python-multipart==0.0.22
