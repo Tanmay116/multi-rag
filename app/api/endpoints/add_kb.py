@@ -1,19 +1,21 @@
-from fastapi import APIRouter, File, Header, HTTPException, UploadFile
+from fastapi import APIRouter, File, Header, HTTPException, Query, UploadFile
+from pydantic import AnyHttpUrl
 
+from app.api.schemas.ingest_schemas import PDFIngestionResponse, WebIngestionResponse
+from app.core.logger import get_logger
 from app.services.ingestion.pdf import ingest_document_flow
 from app.services.ingestion.web import ingest_webpage_flow
-from app.core.logger import get_logger
 
 logger = get_logger("add_kb_router")
 
 ingest_router = APIRouter()
 
 
-@ingest_router.post("/pdf")
+@ingest_router.post("/pdf", response_model=PDFIngestionResponse)
 async def upload_file(
     file: UploadFile = File(...),
     description: str = Header(..., alias="X-Description"),
-):
+) -> PDFIngestionResponse:
     """Ingest a PDF or TXT document into the knowledge base.
 
     Accepts an uploaded file and a human-readable description of the source.
@@ -25,7 +27,8 @@ async def upload_file(
             ``X-Description`` HTTP header.
 
     Returns:
-        A JSON object with a ``"status"`` key containing the ingestion result.
+        A :class:`~app.api.schemas.ingest_schemas.PDFIngestionResponse`
+        containing the ingestion result under the ``status`` key.
 
     Raises:
         HTTPException 400: If no filename is detected or the file type is not
@@ -58,14 +61,14 @@ async def upload_file(
         )
 
     logger.info("PDF ingestion succeeded", extra={"filename": filename})
-    return {"status": result}
+    return PDFIngestionResponse(status=result)
 
 
-@ingest_router.post("/web")
+@ingest_router.post("/web", response_model=WebIngestionResponse)
 async def upload_webpage(
-    webpage: str,
+    webpage: AnyHttpUrl = Query(..., description="The root URL to crawl and ingest."),
     description: str = Header(..., alias="X-Description"),
-):
+) -> WebIngestionResponse:
     """Crawl a webpage and ingest its content into the knowledge base.
 
     Crawls the given URL (and up to ``max_page`` linked pages) using Crawl4AI,
@@ -73,20 +76,20 @@ async def upload_webpage(
     index.
 
     Args:
-        webpage: The root URL to crawl.
+        webpage: The root URL to crawl, provided as a query parameter.
+            Validated as a proper HTTP/HTTPS URL by Pydantic.
         description: A short description of the web source, passed via the
             ``X-Description`` HTTP header.
 
     Returns:
-        A JSON object with a ``"status"`` key containing a summary dict with
-        ``"ingested"`` and ``"failed"`` page counts.
+        A :class:`~app.api.schemas.ingest_schemas.WebIngestionResponse`
+        containing a summary dict with ``ingested`` and ``failed`` page counts.
 
     Raises:
-        HTTPException 400: If the ``webpage`` parameter is empty.
+        HTTPException 422: If ``webpage`` is not a valid URL (Pydantic validation).
         HTTPException 500: If the ingestion pipeline raises an unexpected error.
     """
-    if not webpage:
-        raise HTTPException(status_code=400, detail="No web URL provided.")
+    webpage = str(webpage)
 
     logger.info("Web ingestion request received", extra={"url": webpage})
 
@@ -114,4 +117,4 @@ async def upload_webpage(
         "Web ingestion complete",
         extra={"url": webpage, "result": result},
     )
-    return {"status": result}
+    return WebIngestionResponse(status=result)

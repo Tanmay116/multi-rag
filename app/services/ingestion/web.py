@@ -1,19 +1,19 @@
-from typing import Callable
 import asyncio
 import sys
+from typing import Callable
 
 import tiktoken
-from langchain_text_splitters import (
-    MarkdownHeaderTextSplitter,
-    RecursiveCharacterTextSplitter,
-)
 from crawl4ai import AsyncWebCrawler, BrowserConfig, CrawlerRunConfig
 from crawl4ai.deep_crawling import BFSDeepCrawlStrategy
 from crawl4ai.models import CrawlResultContainer
 from langchain_core.documents import Document as LCDocument
+from langchain_text_splitters import (
+    MarkdownHeaderTextSplitter,
+    RecursiveCharacterTextSplitter,
+)
 
-from app.db.vector_store import update_faiss_index
 from app.core.logger import get_logger
+from app.db.vector_store import update_faiss_index
 
 logger = get_logger("webpage_ingestion")
 
@@ -128,7 +128,7 @@ async def ingest_webpage_flow(url: str, description: str, max_page: int = 5) -> 
                 )
 
                 try:
-                    chunks = process_url(result)
+                    chunks = process_url(result)  # type: ignore
                 except Exception:
                     logger.error(
                         "Failed to process page into chunks",
