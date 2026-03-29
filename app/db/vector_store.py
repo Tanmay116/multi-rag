@@ -17,6 +17,11 @@ INDEX_DIRECTORY = "faiss_index"
 LOCK_FILE = "faiss_index/.faiss_lock"
 LOCK_TIMEOUT = 30
 
+embeddings = HuggingFaceEmbeddings(
+    model_name="BAAI/bge-base-en-v1.5",
+    encode_kwargs={"normalize_embeddings": True},
+)
+
 
 def update_faiss_index(documents: List[Document]) -> bool:
     if not documents:
@@ -31,10 +36,6 @@ def update_faiss_index(documents: List[Document]) -> bool:
         with portalocker.Lock(LOCK_FILE, timeout=LOCK_TIMEOUT, mode="w") as _:
             logger.info("acquired_index_lock", extra={"process_id": os.getpid()})
 
-            embeddings = HuggingFaceEmbeddings(
-                model_name="BAAI/bge-base-en-v1.5",
-                encode_kwargs={"normalize_embeddings": True},
-            )
 
             uuids = [str(uuid4()) for _ in range(len(documents))]
 
@@ -75,3 +76,12 @@ def update_faiss_index(documents: List[Document]) -> bool:
     except Exception as e:
         logger.exception("unexpected_error_in_vector_store", extra={"error": str(e)})
         return False
+    
+
+
+def get_vector_store() -> FAISS: 
+    """"""
+    vector_store = FAISS.load_local(
+        "faiss_index", embeddings, allow_dangerous_deserialization=True
+    )
+    return vector_store

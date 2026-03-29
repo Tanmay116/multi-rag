@@ -61,7 +61,7 @@ async def upload_file(
         )
 
     logger.info("PDF ingestion succeeded", extra={"filename": filename})
-    return PDFIngestionResponse(status=result)
+    return PDFIngestionResponse(status=result)  # type: ignore
 
 
 @ingest_router.post("/web", response_model=WebIngestionResponse)
@@ -89,12 +89,12 @@ async def upload_webpage(
         HTTPException 422: If ``webpage`` is not a valid URL (Pydantic validation).
         HTTPException 500: If the ingestion pipeline raises an unexpected error.
     """
-    webpage = str(webpage)
+    webpage = str(webpage)  # type: ignore
 
     logger.info("Web ingestion request received", extra={"url": webpage})
 
     try:
-        result = await ingest_webpage_flow(webpage, description)
+        result = await ingest_webpage_flow(webpage, description)  # type: ignore
     except RuntimeError as exc:
         logger.error(
             "Web ingestion failed",
