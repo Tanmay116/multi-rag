@@ -97,7 +97,7 @@ def parse_to_documents(
         )
 
 
-async def ingest_document_flow(description: str, file: UploadFile):
+async def ingest_document_flow(description: str, file: UploadFile) -> dict:
     """Orchestrates the ingestion flow with global cleanup."""
     temp_path = None
     try:
@@ -108,22 +108,41 @@ async def ingest_document_flow(description: str, file: UploadFile):
         documents = parse_to_documents(temp_path, clean_name, description)
 
         if not documents:
-            return "No content found in document."
+            logger.warning("empty_document_ingested", extra={"file": clean_name})
+            return {
+                "status": "partial_success",
+                "result": {
+                    "filename": clean_name,
+                    "chunks": 0,
+                    "description": description,
+                    "message": "No content found in document."
+                }
+            }
 
         # Step 3: Store
-        status = update_faiss_index(documents)
+        success = update_faiss_index(documents)
+
+        if not success:
+             raise RuntimeError("Failed to update vector store index.")
 
         logger.info(
-            "ingestion_flow_complete", extra={"file": clean_name, "status": status}
+            "ingestion_flow_complete", extra={"file": clean_name, "chunks": len(documents)}
         )
-        return status
+        return {
+            "status": "success",
+            "result": {
+                "filename": clean_name,
+                "chunks": len(documents),
+                "description": description,
+            }
+        }
 
     except HTTPException:
         raise
 
     except Exception as e:
         logger.exception("unhandled_ingestion_error", extra={"error": str(e)})
-        raise HTTPException(status_code=500, detail="An unexpected error occurred.")
+        raise HTTPException(status_code=500, detail=f"Ingestion failed: {str(e)}")
 
     finally:
         # Step 4: Atomic Cleanup

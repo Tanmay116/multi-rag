@@ -176,7 +176,20 @@ async def ingest_webpage_flow(url: str, description: str, max_page: int = 5) -> 
         "Web ingestion complete",
         extra={"url": url, "ingested": ingested_count, "failed": failed_count},
     )
-    return {"ingested": ingested_count, "failed": failed_count}
+
+    status = "success"
+    if ingested_count == 0:
+        status = "failed"
+    elif failed_count > 0:
+        status = "partial_success"
+
+    return {
+        "status": status,
+        "result": {
+            "ingested": ingested_count,
+            "failed": failed_count,
+        }
+    }
 
 
 # ---------------------------------------------------------------------------

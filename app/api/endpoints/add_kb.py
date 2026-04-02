@@ -28,11 +28,13 @@ async def upload_file(
 
     Returns:
         A :class:`~app.api.schemas.ingest_schemas.PDFIngestionResponse`
-        containing the ingestion result under the ``status`` key.
+        containing the overall ingestion status and a detailed breakdown
+        of the processed file.
 
     Raises:
         HTTPException 400: If no filename is detected or the file type is not
             supported.
+        HTTPException 422: If the document could not be parsed.
         HTTPException 500: If the ingestion pipeline raises an unexpected error.
     """
     filename = file.filename
@@ -45,14 +47,16 @@ async def upload_file(
             detail="Only PDF and TXT files are supported.",
         )
 
-    logger.info("PDF ingestion request received", extra={"filename": filename})
+    logger.info("PDF ingestion request received", extra={"file": filename})
 
     try:
         result = await ingest_document_flow(description, file)
+    except HTTPException:
+        raise
     except Exception:
         logger.error(
             "PDF ingestion failed",
-            extra={"filename": filename},
+            extra={"file": filename},
             exc_info=True,
         )
         raise HTTPException(
@@ -60,8 +64,8 @@ async def upload_file(
             detail="An error occurred during document ingestion. Check server logs.",
         )
 
-    logger.info("PDF ingestion succeeded", extra={"filename": filename})
-    return PDFIngestionResponse(status=result)  # type: ignore
+    logger.info("PDF ingestion succeeded", extra={"file": filename})
+    return PDFIngestionResponse(**result)
 
 
 @ingest_router.post("/web", response_model=WebIngestionResponse)
@@ -83,7 +87,8 @@ async def upload_webpage(
 
     Returns:
         A :class:`~app.api.schemas.ingest_schemas.WebIngestionResponse`
-        containing a summary dict with ``ingested`` and ``failed`` page counts.
+        containing the overall status and a detailed breakdown
+        of ingested versus failed pages.
 
     Raises:
         HTTPException 422: If ``webpage`` is not a valid URL (Pydantic validation).
@@ -117,4 +122,4 @@ async def upload_webpage(
         "Web ingestion complete",
         extra={"url": webpage, "result": result},
     )
-    return WebIngestionResponse(status=result)
+    return WebIngestionResponse(**result)

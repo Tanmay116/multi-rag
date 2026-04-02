@@ -14,18 +14,36 @@ from pydantic import BaseModel, Field
 # ---------------------------------------------------------------------------
 
 
+class PDFIngestionResult(BaseModel):
+    """Detailed breakdown of a successful PDF/TXT ingestion.
+
+    Attributes:
+        filename: Sanitized name of the uploaded file.
+        chunks: Number of chunks (pages/lines) successfully added to the index.
+        description: The user-provided description of the document.
+    """
+
+    filename: str = Field(..., description="Sanitized name of the uploaded file.")
+    chunks: int = Field(..., description="Number of document chunks created.")
+    description: str = Field(..., description="The user-provided description of the document.")
+    message: str | None = Field(None, description="Optional extra information or warnings.")
+
+
 class PDFIngestionResponse(BaseModel):
     """Successful response from the ``POST /pdf`` ingestion endpoint.
 
     Attributes:
-        status: The ingestion result returned by the pipeline.  The exact
-            shape depends on ``ingest_document_flow`` but is typically a
-            string summary or a structured dict.
+        status: Overall status message.
+        result: Detailed breakdown of the ingestion.
     """
 
-    status: Union[str, Dict[str, Any]] = Field(
+    status: str = Field(
         ...,
-        description="Ingestion result returned by the document pipeline.",
+        description="Overall ingestion status (e.g., 'success').",
+    )
+    result: PDFIngestionResult = Field(
+        ...,
+        description="Detailed breakdown of the ingestion process.",
     )
 
 
@@ -45,10 +63,15 @@ class WebIngestionResponse(BaseModel):
     """Successful response from the ``POST /web`` ingestion endpoint.
 
     Attributes:
-        status: A summary dict containing ``ingested`` and ``failed`` page counts.
+        status: Overall status message.
+        result: Breakdown of ingested and failed pages.
     """
 
-    status: Union[WebIngestionResult, Dict[str, Any]] = Field(
+    status: str = Field(
         ...,
-        description="Ingestion summary returned by the web crawl pipeline.",
+        description="Overall ingestion status (e.g., 'success').",
+    )
+    result: WebIngestionResult = Field(
+        ...,
+        description="Detailed breakdown of page ingestion counts.",
     )
