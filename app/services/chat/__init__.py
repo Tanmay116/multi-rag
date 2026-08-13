@@ -6,7 +6,8 @@ from app.db.vector_store import get_vector_store
 vector_store = get_vector_store()
 
 model = ChatOllama(
-    model="qwen3.5:4b",
+    # model="qwen3.5:4b",
+    model="gemma4:31b-cloud",
     # model="minimax-m2.7:cloud",
 )
 

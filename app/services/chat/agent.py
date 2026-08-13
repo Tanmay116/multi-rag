@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from dotenv import load_dotenv
 from langchain.agents import create_agent
 from langchain.tools import tool
@@ -76,6 +74,13 @@ def _web_search(
         return f"Search failed: {e}"
 
 @tool(response_format="content_and_artifact")
+def get_current_date() -> str:
+    """Return the current date."""
+    from datetime import datetime
+    return datetime.now().strftime("%A, %B %d, %Y")
+
+
+@tool(response_format="content_and_artifact")
 def retrieve_context(query: str):
     """Retrieve information to help answer a query."""
     logger.info("Retrieving context from vector store", extra={"query": query})
@@ -108,11 +113,8 @@ def retrieve_context(query: str):
     
 
 
-current_date = datetime.now().strftime("%A, %B %d, %Y")
-
-tools = [retrieve_context, _web_search]  # type: ignore
+tools = [retrieve_context, _web_search, get_current_date]  # type: ignore
 prompt = (
-    f"Today's date is {current_date}. "
     "You are a Senior Research AI Assistant specialized in Deep Learning and NLP. "
     "Your primary knowledge source is the technical blog of Lilian Weng (lilianweng.github.io), "
     "but you have access to web_search for supplemental real-time web data."
