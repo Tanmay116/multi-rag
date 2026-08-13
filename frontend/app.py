@@ -59,10 +59,11 @@ for msg in st.session_state.messages:
         st.markdown(msg["content"])
 
 if prompt := st.chat_input("Ask about machine learning, AI, or latest news..."):
-    # Append user question
-    st.session_state.messages.append({"role": "user", "content": prompt})
+    # Display user message immediately in UI
     with st.chat_message("user"):
         st.markdown(prompt)
+    # Append user question to session state
+    st.session_state.messages.append({"role": "user", "content": prompt})
 
     # Assistant processing
     with st.chat_message("assistant"):
@@ -98,8 +99,8 @@ if prompt := st.chat_input("Ask about machine learning, AI, or latest news..."):
                                 name = tool.get("name", "Unknown")
                                 args = tool.get("args", {})
                                 status.markdown(f"**🛠️ Calling Tool:** `{name}`")
-                                with status.expander(f"Arguments for {name}"):
-                                    st.json(args)
+                                status.write(f"Arguments for `{name}`:")
+                                status.json(args)
                                     
                         elif data["type"] == "tool_result":
                             name = data.get("name", "Unknown")
@@ -115,9 +116,10 @@ if prompt := st.chat_input("Ask about machine learning, AI, or latest news..."):
             else:
                 status.update(label="Finished (No content)", state="complete", expanded=False)
             
-            # Save final response to history
+            # Save final response to history and rerun to clean up temporary elements
             if final_answer:
                 st.session_state.messages.append({"role": "assistant", "content": final_answer})
+                st.rerun()
                 
         except requests.exceptions.RequestException as e:
             status.update(label="Connection Error", state="error", expanded=False)
